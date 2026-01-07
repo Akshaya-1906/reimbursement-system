@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/script.js"></script>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="title">Student Bill Portal</div>
+    <a href="/logout">Logout</a>
+</div>
+
+<div class="container">
+<div class="card">
+<div class="card-header">Student Reimbursement Submission</div>
+
+<form method="post" action="/submit" enctype="multipart/form-data" onsubmit="return prepareData()">
+
+    <label>Upload Bills (PDF only)</label>
+    <input type="file" id="billInput" name="bills" accept="application/pdf" multiple>
+
+    <div id="billList"></div>
+
+    <label>Upload Passbook (PDF only)</label>
+    <input type="file" name="passbook" accept="application/pdf" required>
+
+    <label>Bank Details (Enter Once)</label>
+    <input type="text" id="custName" placeholder="Name" oninput="syncCommon()" required>
+    <input type="text" id="account" placeholder="Account Number" oninput="syncCommon()" required>
+    <input type="text" id="ifsc" placeholder="IFSC Code" oninput="syncCommon()" required>
+    <input type="text" id="branch" placeholder="Branch" oninput="syncCommon()" required>
+
+    <h3>Purchase Details</h3>
+    <table id="dataTable">
+        <tr>
+            <th>Bill File</th>
+            <th>Shop</th>
+            <th>Bill Amount</th>
+            <th>Name</th>
+            <th>Account</th>
+            <th>IFSC</th>
+            <th>Branch</th>
+        </tr>
+    </table>
+
+    <div class="total-box">
+        Grand Total: ₹ <span id="grandTotal">0</span>
+    </div>
+
+    <input type="hidden" name="tableData" id="tableData">
+
+    <div class="actions">
+        <button class="btn btn-primary">Submit Request</button>
+        <a href="/student/status" class="btn btn-outline">View Status</a>
+    </div>
+
+</form>
+</div>
+</div>
+
+</body>
+</html>

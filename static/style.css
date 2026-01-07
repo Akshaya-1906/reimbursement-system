@@ -1,0 +1,291 @@
+/* =========================
+   GLOBAL
+========================= */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #eef4ff;
+    color: #1e2a3a;
+}
+
+h1, h2, h3 {
+    margin-top: 0;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* =========================
+   NAVBAR
+========================= */
+.navbar {
+    background: #1e2a3a;
+    color: white;
+    padding: 14px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar .title {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.navbar a {
+    color: white;
+    font-weight: 500;
+}
+
+/* =========================
+   CONTAINER & CARD
+========================= */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 30px auto;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+}
+
+.card-header {
+    background: #1e2a3a;
+    color: white;
+    padding: 14px 20px;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* =========================
+   LOGIN
+========================= */
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-card {
+    width: 380px;
+    background: white;
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 14px 35px rgba(0,0,0,0.15);
+}
+
+.login-title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 25px;
+}
+
+/* =========================
+   FORMS
+========================= */
+label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="file"],
+select {
+    width: 100%;
+    padding: 10px 12px;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+/* remove number arrows */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* =========================
+   TABLES
+========================= */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th {
+    background: #f4f6fb;
+    padding: 12px;
+    text-align: left;
+    font-size: 14px;
+}
+
+td {
+    padding: 12px;
+    border-top: 1px solid #e2e6f0;
+    font-size: 14px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+.btn {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: 0.2s;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #2f6fed;
+    color: white;
+}
+.btn-primary:hover {
+    background: #1e56c9;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #2f6fed;
+    color: #2f6fed;
+}
+
+/* =========================
+   STATUS
+========================= */
+.status-approved {
+    color: green;
+    font-weight: 700;
+}
+
+.status-pending {
+    color: orange;
+    font-weight: 700;
+}
+
+.status-disapproved {
+    color: red;
+    font-weight: 700;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+.actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* =========================
+   TOTAL
+========================= */
+.total-box {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+}
+
+/* =========================
+   FILE LIST
+========================= */
+#billList div {
+    background: #f4f6fb;
+    padding: 8px 12px;
+    margin-top: 6px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* =========================
+   LOGIN PAGE WITH TWO IMAGES
+========================= */
+
+body.login-page {
+    background:
+        linear-gradient(
+            rgba(30, 42, 58, 0.55),
+            rgba(30, 42, 58, 0.55)
+        ),
+        url("/static/images/login-bg.jpg") no-repeat center center fixed;
+    background-size: cover;
+}
+
+/* Top institute banner */
+.login-banner {
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    text-align: center;
+}
+
+.login-banner img {
+    max-width: 520px;
+    width: 90%;
+    background: white;
+    padding: 8px 12px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+}
+
+
+
+/* Push login card slightly down so it doesn't clash */
+.login-wrapper {
+    padding-top: 120px;
+}
+.login-error {
+    margin-top: 12px;
+    padding: 10px;
+    background: #fdecea;
+    color: #b71c1c;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+

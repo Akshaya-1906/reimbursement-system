@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Bill Portal</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="login-page">
+
+<!-- COLLEGE BANNER -->
+<div class="login-banner">
+    <img src="/static/images/college-banner.png" alt="College Banner">
+</div>
+
+<div class="login-wrapper">
+    <form class="login-card" method="post" action="/login">
+
+        <div class="login-title">Student Bill Portal</div>
+
+        <label>Role</label>
+        <select name="role" required>
+            <option value="student">Student</option>
+            <option value="admin">Admin</option>
+        </select>
+
+        <label>User ID</label>
+        <input type="text" name="userid" placeholder="admin / student" required>
+
+        <label>Password</label>
+        <input type="password" name="password" required>
+        
+        {% if error %}
+        <div class="login-error">
+          {{ error }}
+        </div>
+          {% endif %}
+
+
+        <button class="btn btn-primary" style="width:100%;">Login</button>
+
+    </form>
+</div>
+
+</body>
+</html>

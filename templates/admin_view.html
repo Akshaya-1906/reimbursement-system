@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Consolidated Document</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="navbar">
+    <div class="title">Student Bill Portal</div>
+    <a href="/logout">Logout</a>
+</div>
+
+<div class="container">
+<div class="card">
+<div class="card-header">Consolidated Reimbursement Document</div>
+
+<p><b>Student ID:</b> {{ request_data[1] }}</p>
+<p><b>Status:</b> {{ request_data[5] }}</p>
+
+<h3>Uploaded Bills</h3>
+{% for bill in bills %}
+    <p>
+        <a href="/files/{{ bill }}"
+           class="btn btn-outline"
+           target="_blank">
+            {{ bill.split('/')[-1] }}
+        </a>
+    </p>
+{% endfor %}
+
+<h3>Passbook</h3>
+
+<p>
+    <a href="/files/{{ request_data[3] }}"
+       class="btn btn-primary"
+       target="_blank">
+        View Passbook
+    </a>
+</p>
+
+<h3>Purchase Details</h3>
+<table>
+<tr>
+    <th>Bill</th>
+    <th>Shop</th>
+    <th>Bill Amount</th>
+    <th>Name</th>
+    <th>Account</th>
+    <th>IFSC</th>
+    <th>Branch</th>
+</tr>
+
+{% for row in table_data.rows %}
+<tr>
+    {% for c in row %}
+    <td>{{ c }}</td>
+    {% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+<div class="total-box">
+    Grand Total: ₹ {{ table_data.grandTotal }}
+</div>
+
+<div class="actions">
+    <a href="/admin/download/{{ request_data[0] }}" class="btn btn-primary">Download Excel</a>
+    <a href="/update/{{ request_data[0] }}/APPROVED" class="btn btn-success">Approve</a>
+    <a href="/update/{{ request_data[0] }}/DISAPPROVED" class="btn btn-danger">Disapprove</a>
+</div>
+
+<a href="/admin" class="btn btn-outline">Back to Dashboard</a>
+
+</div>
+</div>
+
+</body>
+</html>

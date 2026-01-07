@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="navbar">
+    <div class="title">Student Bill Portal</div>
+    <a href="/logout">Logout</a>
+</div>
+
+<div class="container">
+<div class="card">
+<div class="card-header">Admin Dashboard</div>
+
+<table>
+<tr>
+    <th>ID</th>
+    <th>Student</th>
+    <th>Status</th>
+    <th>Action</th>
+</tr>
+
+{% for r in data %}
+<tr>
+    <td>{{ r[0] }}</td>
+    <td>{{ r[1] }}</td>
+    <td>
+        {% if r[5] == "APPROVED" %}
+            <span class="status-approved">APPROVED</span>
+        {% elif r[5] == "DISAPPROVED" %}
+            <span class="status-disapproved">DISAPPROVED</span>
+        {% else %}
+            <span class="status-pending">PENDING</span>
+        {% endif %}
+    </td>
+    <td>
+    <!-- First line -->
+    <div style="margin-bottom:8px;">
+        <a href="/admin/request/{{ r[0] }}" class="btn btn-primary">View</a>
+    </div>
+
+    <!-- Second line -->
+    <div style="display:flex; gap:8px;">
+        <a href="/update/{{ r[0] }}/APPROVED" class="btn btn-success">Approve</a>
+        <a href="/update/{{ r[0] }}/DISAPPROVED" class="btn btn-danger">Disapprove</a>
+    </div>
+</td>
+
+</tr>
+{% endfor %}
+</table>
+
+</div>
+</div>
+
+</body>
+</html>

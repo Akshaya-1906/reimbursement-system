@@ -299,7 +299,7 @@ def generate_excel(table_json, filename):
 
     headers = [
         "Bill File", "Shop Name", "Bill Amount",
-        "Total Amount", "Name", "Account", "IFSC", "Branch"
+         "Name", "Account", "IFSC", "Branch"
     ]
     ws.append(headers)
 

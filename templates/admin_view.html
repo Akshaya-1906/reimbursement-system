@@ -42,27 +42,36 @@
 <h3>Purchase Details</h3>
 <table>
 <tr>
-    <th>Bill</th>
-    <th>Shop</th>
+    <th>S. No</th>
+    <th>Description</th>
     <th>Bill Amount</th>
-    <th>Name</th>
-    <th>Account</th>
-    <th>IFSC</th>
+    <th>To Pay Amount</th>
+    <th>Name & Bank Acc. No.</th>
+    <th>IFSC Code</th>
     <th>Branch</th>
 </tr>
 
-{% for row in table_data.rows %}
+{% set rows = table_data.rows %}
+{% set row_count = rows|length %}
+
+{% for row in rows %}
 <tr>
-    {% for c in row %}
-    <td>{{ c }}</td>
-    {% endfor %}
+    <td>{{ row[0] }}</td>
+    <td>{{ row[1] }}</td>
+    <td>{{ row[2] }}</td>
+
+    {% if loop.first %}
+        <td rowspan="{{ row_count }}">{{ row[3] }}</td>
+        <td rowspan="{{ row_count }}">{{ row[4] }}</td>
+        <td rowspan="{{ row_count }}">{{ row[5] }}</td>
+        <td rowspan="{{ row_count }}">{{ row[6] }}</td>
+    {% endif %}
 </tr>
 {% endfor %}
 </table>
 
-<div class="total-box">
-    Grand Total: ₹ {{ table_data.grandTotal }}
-</div>
+
+
 
 <div class="actions">
     <a href="/admin/download/{{ request_data[0] }}" class="btn btn-primary">Download Excel</a>

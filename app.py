@@ -298,31 +298,45 @@ def generate_excel(table_json, filename):
     ws.title = "Reimbursement"
 
     headers = [
-        "Bill File", "Shop Name", "Bill Amount",
-         "Name", "Account", "IFSC", "Branch"
+        "S. No",
+        "Description",
+        "Bill Amount",
+        "To Pay Amount",
+        "Name & Bank Acc. No.",
+        "IFSC Code",
+        "Branch"
     ]
     ws.append(headers)
 
-    grand_total = ""
+    rows = table_json.get("rows", [])
+    if not rows:
+        return
 
-    # ✅ CASE 1: New format (dict)
-    if isinstance(table_json, dict):
-        rows = table_json.get("rows", [])
-        grand_total = table_json.get("grandTotal", "")
+    start_row = 2  # first data row
+    for r in rows:
+        ws.append(r)
 
-    # ✅ CASE 2: Old format (list)
-    else:
-        rows = table_json
-        try:
-            grand_total = sum(float(r[2]) for r in rows)
-        except:
-            grand_total = ""
+    end_row = start_row + len(rows) - 1
 
-    for row in rows:
-        ws.append(row)
+    # 🔥 MERGE COLUMNS (VERTICALLY)
+    ws.merge_cells(start_row=start_row, start_column=4,
+                   end_row=end_row, end_column=4)
 
-    ws.append([])
-    ws.append(["", "", "", "GRAND TOTAL", grand_total])
+    ws.merge_cells(start_row=start_row, start_column=5,
+                   end_row=end_row, end_column=5)
+
+    ws.merge_cells(start_row=start_row, start_column=6,
+                   end_row=end_row, end_column=6)
+
+    ws.merge_cells(start_row=start_row, start_column=7,
+                   end_row=end_row, end_column=7)
+
+    # Center align merged cells
+    from openpyxl.styles import Alignment
+    for col in [4, 5, 6, 7]:
+        ws.cell(row=start_row, column=col).alignment = Alignment(
+            vertical="center", horizontal="center"
+        )
 
     file_stream = io.BytesIO()
     wb.save(file_stream)
@@ -334,6 +348,7 @@ def generate_excel(table_json, filename):
         download_name=filename,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
 
 
 

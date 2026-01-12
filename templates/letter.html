@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Official Letter</title>
+    <style>
+/* ======================
+   PAGE SETUP (A4)
+====================== */
+@page {
+    size: A4;
+    margin: 25mm;
+}
+
+/* Remove browser-added headers/footers in PDF engines */
+@page {
+    @top-left { content: none; }
+    @top-right { content: none; }
+    @bottom-left { content: none; }
+    @bottom-right { content: none; }
+}
+
+body {
+    font-family: "Times New Roman", serif;
+    font-size: 14px;
+    color: #000;
+}
+
+/* ======================
+   HEADER
+====================== */
+.letter-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.letter-logo {
+    width: 80px;      /* 🔥 FIXED LOGO SIZE */
+    height: auto;
+}
+
+.letter-title {
+    text-align: center;
+    flex: 1;
+}
+
+.letter-title h1 {
+    font-size: 18px;
+    margin: 0;
+    font-weight: bold;
+}
+
+.letter-title h2 {
+    font-size: 14px;
+    margin: 4px 0 0;
+    font-weight: bold;
+}
+
+.letter-date {
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* ======================
+   TEXT
+====================== */
+p {
+    margin: 8px 0;
+}
+
+/* ======================
+   TABLE
+====================== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    border: 1px solid #000;
+    padding: 6px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+th {
+    font-weight: bold;
+}
+
+/* ======================
+   FOOTER
+====================== */
+.footer {
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ======================
+   ACTION BUTTONS
+====================== */
+.actions {
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: 1px solid #000;
+    text-decoration: none;
+    color: #000;
+    margin-right: 10px;
+    cursor: pointer;
+    background: #fff;
+}
+
+.btn-primary {
+    border-color: #000;
+}
+
+.btn-success {
+    border-color: #000;
+}
+
+.btn-outline {
+    border-color: #000;
+}
+
+/* Hide buttons while printing */
+@media print {
+    .actions {
+        display: none;
+    }
+}
+</style>
+
+</head>
+<body>
+
+<div class="letter-header">
+    <img src="{{ url_for('static', filename='images/psg_logo.png') }}"
+         class="letter-logo">
+
+    <div class="letter-title">
+        <h1>PSG INSTITUTE OF TECHNOLOGY AND APPLIED RESEARCH</h1>
+        <h2>STUDENT COUNCIL</h2>
+    </div>
+
+    <div class="letter-date">
+        Date: {{ letter_date }}
+    </div>
+</div>
+
+
+
+
+<p><b>Submitted to Principal:</b></p>
+
+<p><b>Sub:</b> {{ subject }}</p>
+
+<p>
+Principal’s kind permission is requested to settle the list of bills given below.
+Photocopy of the bills are enclosed for your kind perusal.
+</p>
+
+<table>
+<tr>
+    <th>S. No</th>
+    <th>Description</th>
+    <th>Bill Amount</th>
+    <th>To Pay Amount</th>
+    <th>Name & Bank Acc. No.</th>
+    <th>IFSC Code</th>
+    <th>Branch</th>
+</tr>
+
+{% set sno = 1 %}
+{% for g in groups %}
+    {% for r in g.rows %}
+    <tr>
+        <td>{{ sno }}</td>
+        <td>{{ r[1] }}</td>
+        <td>{{ r[2] }}</td>
+
+        {% if loop.first %}
+            <td rowspan="{{ g.rows|length }}">{{ g.to_pay }}</td>
+            <td rowspan="{{ g.rows|length }}">{{ g.bank }}</td>
+            <td rowspan="{{ g.rows|length }}">{{ g.ifsc }}</td>
+            <td rowspan="{{ g.rows|length }}">{{ g.branch }}</td>
+        {% endif %}
+    </tr>
+    {% set sno = sno + 1 %}
+    {% endfor %}
+{% endfor %}
+
+<tr>
+    <td colspan="3"><b>Total</b></td>
+    <td colspan="4">
+        <b>{{ total }} ({{ total_words }} Only)</b>
+    </td>
+</tr>
+</table>
+
+
+<div class="footer">
+    <div>
+        Faculty Advisor – Student Council
+    </div>
+    <div>
+        Principal
+    </div>
+</div>
+
+<div class="actions">
+    <button onclick="window.print()" class="btn btn-primary">
+        Print
+    </button>
+
+    <a href="/admin/letter/download?subject={{ subject }}&date={{ letter_date }}"
+       class="btn btn-success">
+        Download PDF
+    </a>
+
+    <a href="/admin" class="btn btn-outline">
+        Back to Dashboard
+    </a>
+</div>
+
+
+
+
+</body>
+</html>

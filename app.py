@@ -4,6 +4,21 @@ from werkzeug.utils import secure_filename
 from openpyxl import Workbook
 from flask import send_file
 import io
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Table, TableStyle,
+    Spacer, Image
+)
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib import colors
+
+
+import pdfkit
+from flask import make_response
+
+import inflect
+import io
 
 
 app = Flask(__name__)
@@ -56,6 +71,13 @@ def init_db():
 # ---------------- DB CONNECTION ----------------
 def get_db():
     return sqlite3.connect(DB_PATH)
+
+
+
+def number_to_words(n):
+    
+    p = inflect.engine()
+    return p.number_to_words(n).replace("-", " ").title()
 
 # ---------------- LOGIN ----------------
 @app.route("/")
@@ -349,8 +371,283 @@ def generate_excel(table_json, filename):
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
+@app.route("/admin/generate-letter", methods=["POST"])
+def generate_letter():
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    subject = request.form["subject"]
+    date_raw = request.form["letter_date"]
+    y, m, d = date_raw.split("-")
+    letter_date = f"{d}-{m}-{y}"
+
+    request_ids = request.form.getlist("request_ids")
+
+    db = get_db()
+    cur = db.cursor()
+
+    grouped_data = []   # 🔥 each request stays separate
+    grand_total = 0
+
+    for rid in request_ids:
+        cur.execute(
+            "SELECT table_data FROM requests WHERE id=?",
+            (rid,)
+        )
+        table_json = json.loads(cur.fetchone()[0])
+
+        rows = table_json["rows"]
+
+        to_pay = rows[0][3]
+        bank = rows[0][4]
+        ifsc = rows[0][5]
+        branch = rows[0][6]
+
+        subtotal = sum(float(r[2]) for r in rows)
+        grand_total += subtotal
+
+        grouped_data.append({
+            "rows": rows,
+            "to_pay": to_pay,
+            "bank": bank,
+            "ifsc": ifsc,
+            "branch": branch,
+            "subtotal": subtotal
+        })
+
+    db.close()
+
+    session["letter_data"] = {
+    "subject": subject,
+    "letter_date": letter_date,
+    "groups": grouped_data,
+    "total": grand_total,
+    "total_words": number_to_words(int(grand_total))
+}
+    session["letter_subject"] = subject
+    session["letter_date"] = letter_date
+    session["letter_groups"] = grouped_data
+    session["letter_total"] = grand_total
+    session["letter_total_words"] = number_to_words(int(grand_total))
 
 
+    
+    return render_template(
+    "letter.html",
+    subject=subject,
+    letter_date=letter_date,
+    groups=grouped_data,
+    total=grand_total,
+    total_words=number_to_words(int(grand_total))
+)
+
+
+
+
+
+
+
+def generate_letter_pdf(subject, letter_date, groups, total, total_words):
+    buffer = io.BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=40,
+        rightMargin=40,
+        topMargin=40,
+        bottomMargin=40
+    )
+
+    styles = getSampleStyleSheet()
+    content = []
+
+    # ================= HEADER =================
+    logo = Image("static/images/psg_logo.png", width=55, height=55)
+
+    title_style = ParagraphStyle(
+        "title",
+        parent=styles["Normal"],
+        fontSize=13,
+        leading=16,
+        alignment=TA_CENTER,
+        fontName="Helvetica-Bold"
+    )
+
+    header = Table(
+        [[
+            logo,
+            Paragraph(
+                "PSG INSTITUTE OF TECHNOLOGY AND APPLIED RESEARCH<br/>"
+                "STUDENT COUNCIL",
+                title_style
+            ),
+            Paragraph(f"<b>Date:</b> {letter_date}", styles["Normal"])
+        ]],
+        colWidths=[70, 330, 115]
+    )
+
+    header.setStyle(TableStyle([
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN", (2,0), (2,0), "RIGHT"),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
+    ]))
+
+    content.append(header)
+    content.append(Spacer(1, 15))
+
+    # ================= BODY =================
+    content.append(Paragraph("<b>Submitted to Principal:</b>", styles["Normal"]))
+    content.append(Spacer(1, 6))
+    content.append(Paragraph(f"<b>Sub:</b> {subject}", styles["Normal"]))
+    content.append(Spacer(1, 10))
+
+    content.append(Paragraph(
+        "Principal’s kind permission is requested to settle the list of bills given below. "
+        "Photocopy of the bills are enclosed for your kind perusal.",
+        styles["Normal"]
+    ))
+
+    content.append(Spacer(1, 15))
+
+    cell_style = ParagraphStyle(
+     "cell",
+      parent=styles["Normal"],
+      fontSize=9,
+      leading=11,
+      alignment=TA_CENTER
+    )
+
+    header_style = ParagraphStyle(
+      "header",
+       parent=styles["Normal"],
+       fontSize=9,
+       leading=11,
+       alignment=TA_CENTER,
+       fontName="Helvetica-Bold"
+    )
+
+
+    # ================= TABLE =================
+    table_data = [[
+     Paragraph("S. No", header_style),
+     Paragraph("Description", header_style),
+     Paragraph("Bill Amount", header_style),
+     Paragraph("To Pay Amount", header_style),
+     Paragraph("Name & Bank Acc. No.", header_style),
+     Paragraph("IFSC Code", header_style),
+     Paragraph("Branch", header_style),
+    ]]
+
+
+    style_cmds = [
+        ("GRID", (0,0), (-1,-1), 1, colors.black),
+        ("FONT", (0,0), (-1,0), "Helvetica-Bold"),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("ALIGN", (2,1), (-1,-1), "CENTER"),
+    ]
+
+    row_index = 1
+    sno = 1
+
+    for g in groups:
+      start = row_index
+      first = True
+
+      for r in g["rows"]:
+        table_data.append([
+            Paragraph(str(sno), cell_style),
+            Paragraph(str(r[1]), cell_style),
+            Paragraph(str(r[2]), cell_style),
+            Paragraph(str(g["to_pay"]) if first else "", cell_style),
+            Paragraph(str(g["bank"]) if first else "", cell_style),
+            Paragraph(str(g["ifsc"]) if first else "", cell_style),
+            Paragraph(str(g["branch"]) if first else "", cell_style),
+        ])
+        first = False
+        
+        row_index += 1
+
+      end = row_index - 1
+
+      style_cmds += [
+        ("SPAN", (0, start), (0, end)),  # ✅ S. No
+        ("SPAN", (3, start), (3, end)),
+        ("SPAN", (4, start), (4, end)),
+        ("SPAN", (5, start), (5, end)),
+        ("SPAN", (6, start), (6, end)),
+        ]
+
+      sno += 1
+
+    # ================= TOTAL ROW =================
+    table_data.append([
+      Paragraph("", cell_style),
+      Paragraph("Total", header_style),
+      Paragraph("", cell_style),
+      Paragraph("", cell_style),
+      Paragraph(f"{total} ({total_words} Only)", header_style),
+      Paragraph("", cell_style),
+      Paragraph("", cell_style),
+   ])
+
+
+    style_cmds += [
+      ("SPAN", (0, row_index), (1, row_index)),
+      ("SPAN", (4, row_index), (6, row_index)),
+      ("ALIGN", (4, row_index), (6, row_index), "CENTER"),
+    ]
+
+
+    table = Table(
+        table_data,
+        colWidths=[35, 110, 65, 70, 140, 55, 40],  # ✅ fits A4 margins
+        repeatRows=1
+    )
+
+    table.setStyle(TableStyle(style_cmds))
+    content.append(table)
+
+    content.append(Spacer(1, 40))
+
+    # ================= FOOTER =================
+    footer = Table(
+        [["Faculty Advisor – Student Council", "Principal"]],
+        colWidths=[250, 250]
+    )
+
+    footer.setStyle(TableStyle([
+        ("ALIGN", (0,0), (0,0), "LEFT"),
+        ("ALIGN", (1,0), (1,0), "RIGHT"),
+    ]))
+
+    content.append(footer)
+
+    doc.build(content)
+    buffer.seek(0)
+    return buffer
+
+
+
+@app.route("/admin/letter/download")
+def download_letter():
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    buffer = generate_letter_pdf(
+        session["letter_subject"],
+        session["letter_date"],
+        session["letter_groups"],
+        session["letter_total"],
+        session["letter_total_words"]
+    )
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="Official_Letter.pdf",
+        mimetype="application/pdf"
+    )
 
 # ---------------- FILE SERVING ----------------
 @app.route("/files/<path:filepath>")

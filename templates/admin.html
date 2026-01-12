@@ -15,8 +15,11 @@
 <div class="card">
 <div class="card-header">Admin Dashboard</div>
 
+<form method="post" action="/admin/generate-letter">
+
 <table>
 <tr>
+    <th>Select</th>
     <th>ID</th>
     <th>Student</th>
     <th>Status</th>
@@ -25,8 +28,15 @@
 
 {% for r in data %}
 <tr>
+    <td>
+        {% if r[5] == "APPROVED" %}
+            <input type="checkbox" name="request_ids" value="{{ r[0] }}">
+        {% endif %}
+    </td>
+
     <td>{{ r[0] }}</td>
     <td>{{ r[1] }}</td>
+
     <td>
         {% if r[5] == "APPROVED" %}
             <span class="status-approved">APPROVED</span>
@@ -36,22 +46,38 @@
             <span class="status-pending">PENDING</span>
         {% endif %}
     </td>
+
     <td>
-    <!-- First line -->
-    <div style="margin-bottom:8px;">
-        <a href="/admin/request/{{ r[0] }}" class="btn btn-primary">View</a>
-    </div>
-
-    <!-- Second line -->
-    <div style="display:flex; gap:8px;">
-        <a href="/update/{{ r[0] }}/APPROVED" class="btn btn-success">Approve</a>
-        <a href="/update/{{ r[0] }}/DISAPPROVED" class="btn btn-danger">Disapprove</a>
-    </div>
-</td>
-
+        <div style="margin-bottom:8px;">
+            <a href="/admin/request/{{ r[0] }}" class="btn btn-primary">View</a>
+        </div>
+        <div style="display:flex; gap:8px;">
+            <a href="/update/{{ r[0] }}/APPROVED" class="btn btn-success">Approve</a>
+            <a href="/update/{{ r[0] }}/DISAPPROVED" class="btn btn-danger">Disapprove</a>
+        </div>
+    </td>
 </tr>
 {% endfor %}
 </table>
+
+<hr style="margin:25px 0;">
+
+<h3>Generate Official Letter</h3>
+
+<label>Subject</label>
+<input type="text" name="subject"
+       placeholder="Enter subject here"
+       required>
+
+<label>Date</label>
+<input type="date" name="letter_date" required>
+
+<br><br>
+<button class="btn btn-primary">
+    Generate Letter
+</button>
+
+</form>
 
 </div>
 </div>

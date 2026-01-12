@@ -288,4 +288,75 @@ body.login-page {
     font-weight: 600;
     text-align: center;
 }
+/* =========================
+   OFFICIAL LETTER HEADER
+========================= */
+
+.letter-header {
+    display: grid;
+    grid-template-columns: 120px 1fr 200px;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.letter-logo {
+    width: 50px;       /* ✅ FIXED SIZE */
+    height: 50px;
+}
+
+.letter-title {
+    text-align: center;
+}
+
+.letter-title h1 {
+    font-size: 18px;
+    margin: 0;
+    font-weight: 700;
+}
+
+.letter-title h2 {
+    font-size: 14px;
+    margin: 4px 0 0;
+    font-weight: 600;
+}
+
+.letter-date {
+    text-align: right;
+    font-size: 14px;
+}
+body {
+    font-family: "Times New Roman", serif;
+    font-size: 14px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid black;
+    padding: 6px;
+    text-align: center;
+}
+
+.footer {
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+}
+
+
+/* A4 layout */
+
+@page {
+    size: A4;
+    margin: 20mm;
+}
+
+@media print {
+    body {
+        margin: 0;
+    }
+}
 

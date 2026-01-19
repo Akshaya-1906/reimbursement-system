@@ -102,28 +102,51 @@ th {
 ====================== */
 .actions {
     margin-top: 30px;
+    display: flex;
+    gap: 14px;
+    justify-content: flex-start;
 }
 
-.btn {
-    padding: 6px 12px;
-    border: 1px solid #000;
-    text-decoration: none;
-    color: #000;
-    margin-right: 10px;
+/* Buttons */
+.actions .btn {
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    background: #fff;
+    text-decoration: none;
+    display: inline-block;
+    transition: 0.2s ease;
 }
 
-.btn-primary {
-    border-color: #000;
+/* Print */
+.actions .btn-primary {
+    background: #2f6fed;
+    color: #fff;
+    border: none;
+}
+.actions .btn-primary:hover {
+    background: #1e56c9;
 }
 
-.btn-success {
-    border-color: #000;
+/* Download */
+.actions .btn-success {
+    background: #28a745;
+    color: #fff;
+    border: none;
+}
+.actions .btn-success:hover {
+    background: #1e7e34;
 }
 
-.btn-outline {
-    border-color: #000;
+/* Back */
+.actions .btn-outline {
+    background: transparent;
+    border: 2px solid #2f6fed;
+    color: #2f6fed;
+}
+.actions .btn-outline:hover {
+    background: #e8f0ff;
 }
 
 /* Hide buttons while printing */

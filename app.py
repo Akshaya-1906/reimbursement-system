@@ -611,22 +611,45 @@ def generate_letter_pdf(subject, letter_date, groups, total, total_words):
     content.append(Spacer(1, 40))
 
     # ================= FOOTER =================
-    footer = Table(
-        [["Faculty Advisor – Student Council", "Principal"]],
-        colWidths=[250, 250]
+    # ================= FOOTER (TEXT ONLY, PERFECTLY ALIGNED) =================
+    
+ 
+    
+
+
+    doc.build(
+    content,
+    onFirstPage=draw_footer,
+    onLaterPages=draw_footer
     )
 
-    footer.setStyle(TableStyle([
-        ("ALIGN", (0,0), (0,0), "LEFT"),
-        ("ALIGN", (1,0), (1,0), "RIGHT"),
-    ]))
-
-    content.append(footer)
-
-    doc.build(content)
     buffer.seek(0)
     return buffer
 
+from reportlab.lib.units import mm
+
+def draw_footer(canvas, doc):
+    canvas.saveState()
+
+    y = 25 * mm  # distance from bottom
+
+    canvas.setFont("Helvetica", 10)
+
+    # Left footer
+    canvas.drawString(
+        doc.leftMargin,
+        y,
+        "Faculty Advisor – Student Council"
+    )
+
+    # Right footer
+    canvas.drawRightString(
+        doc.pagesize[0] - doc.rightMargin,
+        y,
+        "Principal"
+    )
+
+    canvas.restoreState()
 
 
 @app.route("/admin/letter/download")

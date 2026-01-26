@@ -12,6 +12,11 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib import colors
+from reportlab.pdfgen import canvas
+from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate
+from reportlab.lib.units import mm
+from PyPDF2 import PdfMerger
+import os
 
 
 import pdfkit
@@ -255,11 +260,23 @@ def admin():
 
     db = get_db()
     cur = db.cursor()
+
+    # All requests
     cur.execute("SELECT * FROM requests")
     data = cur.fetchall()
+
+    # ✅ Approved request count (auto-updates after delete/approve)
+    cur.execute("SELECT COUNT(*) FROM requests WHERE status = 'APPROVED'")
+    approved_count = cur.fetchone()[0]
+
     db.close()
 
-    return render_template("admin.html", data=data)
+    return render_template(
+        "admin.html",
+        data=data,
+        approved_count=approved_count
+    )
+
 
 # ---------------- CONSOLIDATED VIEW ----------------
 @app.route("/admin/request/<int:req_id>")
@@ -441,62 +458,162 @@ def generate_letter():
     total_words=number_to_words(int(grand_total))
 )
 
+def draw_first_page_header(canvas, doc, letter_date):
+    canvas.saveState()
+
+    top_y = doc.pagesize[1]
+
+    # Logo
+    canvas.drawImage(
+        "static/images/psg_logo.png",
+        doc.leftMargin,
+        top_y - 70,
+        width=45,
+        height=45,
+        preserveAspectRatio=True
+    )
+
+    # Institute Name
+    canvas.setFont("Helvetica-Bold", 13)
+    canvas.drawCentredString(
+        doc.pagesize[0] / 2,
+        top_y - 45,
+        "PSG INSTITUTE OF TECHNOLOGY AND APPLIED RESEARCH"
+    )
+
+    # Student Council
+    canvas.setFont("Helvetica-Bold", 11)
+    canvas.drawCentredString(
+        doc.pagesize[0] / 2,
+        top_y - 60,
+        "STUDENT COUNCIL"
+    )
+
+    # ✅ Date — ONLY FIRST PAGE
+    canvas.setFont("Helvetica", 10)
+    canvas.drawRightString(
+        doc.pagesize[0] - doc.rightMargin,
+        top_y - 80,
+        f"Date: {letter_date}"
+    )
+
+    canvas.restoreState()
+def draw_later_pages_header(canvas, doc):
+    canvas.saveState()
+
+    top_y = doc.pagesize[1]
+
+    # Logo
+    canvas.drawImage(
+        "static/images/psg_logo.png",
+        doc.leftMargin,
+        top_y - 70,
+        width=45,
+        height=45,
+        preserveAspectRatio=True
+    )
+
+    # Institute Name
+    canvas.setFont("Helvetica-Bold", 13)
+    canvas.drawCentredString(
+        doc.pagesize[0] / 2,
+        top_y - 45,
+        "PSG INSTITUTE OF TECHNOLOGY AND APPLIED RESEARCH"
+    )
+
+    # Student Council
+    canvas.setFont("Helvetica-Bold", 11)
+    canvas.drawCentredString(
+        doc.pagesize[0] / 2,
+        top_y - 60,
+        "STUDENT COUNCIL"
+    )
+
+    canvas.restoreState()
 
 
 
+# =========================
+# FOOTER (LAST PAGE ONLY)
+# =========================
+class LastPageFooterCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        total_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            if self._pageNumber == total_pages:
+                self.draw_footer()
+            canvas.Canvas.showPage(self)
+        canvas.Canvas.save(self)
+
+    def draw_footer(self):
+        y = 25 * mm
+        self.setFont("Helvetica", 10)
+
+        self.drawString(
+            40,
+            y,
+            "Faculty Advisor – Student Council"
+        )
+
+        self.drawRightString(
+            self._pagesize[0] - 40,
+            y,
+            "Principal"
+        )
 
 
-
+# =========================
+# MAIN PDF FUNCTION
+# =========================
 def generate_letter_pdf(subject, letter_date, groups, total, total_words):
     buffer = io.BytesIO()
 
-    doc = SimpleDocTemplate(
+    doc = BaseDocTemplate(
         buffer,
         pagesize=A4,
         leftMargin=40,
         rightMargin=40,
-        topMargin=40,
+        topMargin=90,     # space for header
         bottomMargin=40
     )
+
+    frame = Frame(
+        doc.leftMargin,
+        doc.bottomMargin,
+        doc.width,
+        doc.height,
+        id="normal"
+    )
+
+    doc.addPageTemplates([
+        doc.addPageTemplates([
+         PageTemplate(
+            id="FirstPage",
+            frames=[frame],
+            onPage=lambda c, d: draw_first_page_header(c, d, letter_date)
+         ),
+         PageTemplate(
+            id="LaterPages",
+            frames=[frame],
+            onPage=draw_later_pages_header
+         )
+        ])
+
+    ])
 
     styles = getSampleStyleSheet()
     content = []
 
-    # ================= HEADER =================
-    logo = Image("static/images/psg_logo.png", width=55, height=55)
-
-    title_style = ParagraphStyle(
-        "title",
-        parent=styles["Normal"],
-        fontSize=13,
-        leading=16,
-        alignment=TA_CENTER,
-        fontName="Helvetica-Bold"
-    )
-
-    header = Table(
-        [[
-            logo,
-            Paragraph(
-                "PSG INSTITUTE OF TECHNOLOGY AND APPLIED RESEARCH<br/>"
-                "STUDENT COUNCIL",
-                title_style
-            ),
-            Paragraph(f"<b>Date:</b> {letter_date}", styles["Normal"])
-        ]],
-        colWidths=[70, 330, 115]
-    )
-
-    header.setStyle(TableStyle([
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-        ("ALIGN", (2,0), (2,0), "RIGHT"),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 10),
-    ]))
-
-    content.append(header)
-    content.append(Spacer(1, 15))
-
-    # ================= BODY =================
+    # ================= BODY TEXT =================
     content.append(Paragraph("<b>Submitted to Principal:</b>", styles["Normal"]))
     content.append(Spacer(1, 6))
     content.append(Paragraph(f"<b>Sub:</b> {subject}", styles["Normal"]))
@@ -510,39 +627,37 @@ def generate_letter_pdf(subject, letter_date, groups, total, total_words):
 
     content.append(Spacer(1, 15))
 
+    # ================= TABLE STYLES =================
     cell_style = ParagraphStyle(
-     "cell",
-      parent=styles["Normal"],
-      fontSize=9,
-      leading=11,
-      alignment=TA_CENTER
+        "cell",
+        parent=styles["Normal"],
+        fontSize=9,
+        leading=11,
+        alignment=TA_CENTER
     )
 
     header_style = ParagraphStyle(
-      "header",
-       parent=styles["Normal"],
-       fontSize=9,
-       leading=11,
-       alignment=TA_CENTER,
-       fontName="Helvetica-Bold"
+        "header",
+        parent=styles["Normal"],
+        fontSize=9,
+        leading=11,
+        alignment=TA_CENTER,
+        fontName="Helvetica-Bold"
     )
 
-
-    # ================= TABLE =================
+    # ================= TABLE DATA =================
     table_data = [[
-     Paragraph("S. No", header_style),
-     Paragraph("Description", header_style),
-     Paragraph("Bill Amount", header_style),
-     Paragraph("To Pay Amount", header_style),
-     Paragraph("Name & Bank Acc. No.", header_style),
-     Paragraph("IFSC Code", header_style),
-     Paragraph("Branch", header_style),
+        Paragraph("S. No", header_style),
+        Paragraph("Description", header_style),
+        Paragraph("Bill Amount", header_style),
+        Paragraph("To Pay Amount", header_style),
+        Paragraph("Name & Bank Acc. No.", header_style),
+        Paragraph("IFSC Code", header_style),
+        Paragraph("Branch", header_style),
     ]]
-
 
     style_cmds = [
         ("GRID", (0,0), (-1,-1), 1, colors.black),
-        ("FONT", (0,0), (-1,0), "Helvetica-Bold"),
         ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
         ("ALIGN", (2,1), (-1,-1), "CENTER"),
     ]
@@ -551,105 +666,68 @@ def generate_letter_pdf(subject, letter_date, groups, total, total_words):
     sno = 1
 
     for g in groups:
-      start = row_index
-      first = True
+        start = row_index
+        first = True
 
-      for r in g["rows"]:
-        table_data.append([
-            Paragraph(str(sno), cell_style),
-            Paragraph(str(r[1]), cell_style),
-            Paragraph(str(r[2]), cell_style),
-            Paragraph(str(g["to_pay"]) if first else "", cell_style),
-            Paragraph(str(g["bank"]) if first else "", cell_style),
-            Paragraph(str(g["ifsc"]) if first else "", cell_style),
-            Paragraph(str(g["branch"]) if first else "", cell_style),
-        ])
-        first = False
-        
-        row_index += 1
+        for r in g["rows"]:
+            table_data.append([
+                Paragraph(str(sno), cell_style),
+                Paragraph(str(r[1]), cell_style),
+                Paragraph(str(r[2]), cell_style),
+                Paragraph(str(g["to_pay"]) if first else "", cell_style),
+                Paragraph(str(g["bank"]) if first else "", cell_style),
+                Paragraph(str(g["ifsc"]) if first else "", cell_style),
+                Paragraph(str(g["branch"]) if first else "", cell_style),
+            ])
+            first = False
+            row_index += 1
 
-      end = row_index - 1
+        end = row_index - 1
 
-      style_cmds += [
-        ("SPAN", (0, start), (0, end)),  # ✅ S. No
-        ("SPAN", (3, start), (3, end)),
-        ("SPAN", (4, start), (4, end)),
-        ("SPAN", (5, start), (5, end)),
-        ("SPAN", (6, start), (6, end)),
+        style_cmds += [
+            ("SPAN", (0, start), (0, end)),
+            ("SPAN", (3, start), (3, end)),
+            ("SPAN", (4, start), (4, end)),
+            ("SPAN", (5, start), (5, end)),
+            ("SPAN", (6, start), (6, end)),
         ]
 
-      sno += 1
+        sno += 1
 
     # ================= TOTAL ROW =================
     table_data.append([
-      Paragraph("", cell_style),
-      Paragraph("Total", header_style),
-      Paragraph("", cell_style),
-      Paragraph("", cell_style),
-      Paragraph(f"{total} ({total_words} Only)", header_style),
-      Paragraph("", cell_style),
-      Paragraph("", cell_style),
-   ])
-
+        Paragraph("", cell_style),
+        Paragraph("Total", header_style),
+        Paragraph("", cell_style),
+        Paragraph("", cell_style),
+        Paragraph(f"{total} ({total_words} Only)", header_style),
+        Paragraph("", cell_style),
+        Paragraph("", cell_style),
+    ])
 
     style_cmds += [
-      ("SPAN", (0, row_index), (1, row_index)),
-      ("SPAN", (4, row_index), (6, row_index)),
-      ("ALIGN", (4, row_index), (6, row_index), "CENTER"),
+        ("SPAN", (0, row_index), (1, row_index)),
+        ("SPAN", (4, row_index), (6, row_index)),
+        ("ALIGN", (4, row_index), (6, row_index), "CENTER"),
     ]
-
 
     table = Table(
         table_data,
-        colWidths=[35, 110, 65, 70, 140, 55, 40],  # ✅ fits A4 margins
+        colWidths=[35, 110, 65, 70, 140, 55, 40],
         repeatRows=1
     )
 
     table.setStyle(TableStyle(style_cmds))
     content.append(table)
 
-    content.append(Spacer(1, 40))
-
-    # ================= FOOTER =================
-    # ================= FOOTER (TEXT ONLY, PERFECTLY ALIGNED) =================
-    
- 
-    
-
-
+    # ================= BUILD =================
     doc.build(
-    content,
-    onFirstPage=draw_footer,
-    onLaterPages=draw_footer
+        content,
+        canvasmaker=LastPageFooterCanvas
     )
 
     buffer.seek(0)
     return buffer
-
-from reportlab.lib.units import mm
-
-def draw_footer(canvas, doc):
-    canvas.saveState()
-
-    y = 25 * mm  # distance from bottom
-
-    canvas.setFont("Helvetica", 10)
-
-    # Left footer
-    canvas.drawString(
-        doc.leftMargin,
-        y,
-        "Faculty Advisor – Student Council"
-    )
-
-    # Right footer
-    canvas.drawRightString(
-        doc.pagesize[0] - doc.rightMargin,
-        y,
-        "Principal"
-    )
-
-    canvas.restoreState()
 
 
 @app.route("/admin/letter/download")
@@ -671,6 +749,106 @@ def download_letter():
         download_name="Official_Letter.pdf",
         mimetype="application/pdf"
     )
+def merge_pdfs(pdf_paths, output_buffer):
+    merger = PdfMerger()
+
+    for path in pdf_paths:
+        if os.path.exists(path):
+            merger.append(path)
+
+    merger.write(output_buffer)
+    merger.close()
+from PyPDF2 import PdfMerger
+from flask import send_file
+import io, json, os
+
+@app.route("/admin/download-approved-bills")
+def download_approved_bills():
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    db = get_db()
+    cur = db.cursor()
+
+    cur.execute("""
+        SELECT bill FROM requests WHERE status='APPROVED'
+    """)
+    rows = cur.fetchall()
+    db.close()
+
+    merger = PdfMerger()
+
+    for row in rows:
+        bill_list = json.loads(row[0])   # bill is stored as JSON list
+        for bill_path in bill_list:
+            full_path = os.path.join(BASE_DIR, bill_path)
+            if os.path.exists(full_path):
+                merger.append(full_path)
+
+    # 🔥 WRITE INTO BYTESIO
+    output = io.BytesIO()
+    merger.write(output)
+    merger.close()
+
+    # 🔥 THIS IS CRITICAL
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="Approved_Bills.pdf",
+        mimetype="application/pdf"
+    )
+
+
+@app.route("/admin/download-approved-passbooks")
+def download_approved_passbooks():
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    db = get_db()
+    cur = db.cursor()
+
+    cur.execute("""
+        SELECT passbook FROM requests WHERE status='APPROVED'
+    """)
+    rows = cur.fetchall()
+    db.close()
+
+    merger = PdfMerger()
+
+    for row in rows:
+        full_path = os.path.join(BASE_DIR, row[0])
+        if os.path.exists(full_path):
+            merger.append(full_path)
+
+    output = io.BytesIO()
+    merger.write(output)
+    merger.close()
+    output.seek(0)
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name="Approved_Passbooks.pdf",
+        mimetype="application/pdf"
+    )
+@app.route("/admin/delete-selected", methods=["POST"])
+def delete_selected():
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    ids = request.form.getlist("delete_ids")
+
+    if ids:
+        cursor = sqlite3.connect("database.db").cursor()
+        cursor.execute(
+            f"DELETE FROM requests WHERE id IN ({','.join(['?']*len(ids))})",
+            ids
+        )
+        cursor.connection.commit()
+
+    return redirect("/admin")
 
 # ---------------- FILE SERVING ----------------
 @app.route("/files/<path:filepath>")

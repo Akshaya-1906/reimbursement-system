@@ -15,19 +15,37 @@
 <div class="card">
 <div class="card-header">Admin Dashboard</div>
 
-<form method="post" action="/admin/generate-letter">
+<form method="post">
+<div style="
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:15px;
+">
+    <span style="
+        background:#e6f7ea;
+        color:#1e7e34;
+        padding:6px 14px;
+        border-radius:20px;
+        font-weight:600;
+        font-size:14px;
+    ">
+        ✅ Approved Requests: {{ approved_count }}
+    </span>
+</div>
 
-<table>
+<table class="admin-table">
 <tr>
-    <th>Select</th>
+    <th>Generate Letter</th>
     <th>ID</th>
     <th>Student</th>
     <th>Status</th>
     <th>Action</th>
+    <th>Delete Request</th>
 </tr>
 
 {% for r in data %}
 <tr>
+    <!-- Generate Letter checkbox (ONLY APPROVED) -->
     <td>
         {% if r[5] == "APPROVED" %}
             <input type="checkbox" name="request_ids" value="{{ r[0] }}">
@@ -56,12 +74,36 @@
             <a href="/update/{{ r[0] }}/DISAPPROVED" class="btn btn-danger">Disapprove</a>
         </div>
     </td>
+
+    <!-- Delete checkbox (ALL REQUESTS) -->
+    <td>
+        <input type="checkbox" name="delete_ids" value="{{ r[0] }}">
+    </td>
 </tr>
 {% endfor %}
 </table>
 
 <hr style="margin:25px 0;">
 
+<!-- BULK DOWNLOAD -->
+<a href="/admin/download-approved-bills" class="btn btn-primary">
+    Download All Approved Bills (PDF)
+</a>
+
+<a href="/admin/download-approved-passbooks" class="btn btn-success">
+    Download All Approved Passbooks (PDF)
+</a>
+<button formaction="/admin/delete-selected"
+        formmethod="post"
+        formnovalidate
+        class="btn btn-danger"
+        style="float:right;">
+    Delete Selected
+</button>
+
+<hr style="margin:25px 0;">
+
+<!-- GENERATE LETTER -->
 <h3>Generate Official Letter</h3>
 
 <label>Subject</label>
@@ -73,9 +115,14 @@
 <input type="date" name="letter_date" required>
 
 <br><br>
-<button class="btn btn-primary">
+<button formaction="/admin/generate-letter"
+        formmethod="post"
+        class="btn btn-primary">
     Generate Letter
 </button>
+
+<!-- DELETE SELECTED -->
+
 
 </form>
 
